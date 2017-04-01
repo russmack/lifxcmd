@@ -1,0 +1,11 @@
+[root]
+name = "lifxcmd"
+version = "0.1.0"
+dependencies = [
+ "rustylifx 0.1.0",
+]
+
+[[package]]
+name = "rustylifx"
+version = "0.1.0"
+
