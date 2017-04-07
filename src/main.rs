@@ -41,9 +41,12 @@ fn main() {
     };
     let initial_state = match payload {
         Some(v) => {
-            let h = colour::hue_word_to_degrees(v.hsbk.hue.parse::<u16>().unwrap());
-            let s = colour::saturation_word_to_percent(v.hsbk.saturation.parse::<u16>().unwrap());
-            let b = colour::brightness_word_to_percent(v.hsbk.brightness.parse::<u16>().unwrap());
+            let h = colour::hue_word_to_degrees(v.hsbk.hue);
+            //let h = colour::hue_word_to_degrees(v.hsbk.hue.parse::<u16>().unwrap());
+            let s = colour::saturation_word_to_percent(v.hsbk.saturation as u16);
+            //let s = colour::saturation_word_to_percent(v.hsbk.saturation.parse::<u16>().unwrap());
+            let b = colour::brightness_word_to_percent(v.hsbk.brightness as u16);
+            //let b = colour::brightness_word_to_percent(v.hsbk.brightness.parse::<u16>().unwrap());
             Some(colour::HSB::new(h, s, b))
         },
         None => None,
@@ -100,9 +103,12 @@ fn flash(device: &Device, flash_colour: HSB, duration_ms: u64) {
     */
     let current_state = match payload {
         Some(v) => {
-            let h = colour::hue_word_to_degrees(v.hsbk.hue.parse::<u16>().unwrap());
-            let s = colour::saturation_word_to_percent(v.hsbk.saturation.parse::<u16>().unwrap());
-            let b = colour::brightness_word_to_percent(v.hsbk.brightness.parse::<u16>().unwrap());
+            let h = colour::hue_word_to_degrees(v.hsbk.hue);
+            //let h = colour::hue_word_to_degrees(v.hsbk.hue.parse::<u16>().unwrap());
+            let s = colour::saturation_word_to_percent(v.hsbk.saturation as u16);
+            //let s = colour::saturation_word_to_percent(v.hsbk.saturation.parse::<u16>().unwrap());
+            let b = colour::brightness_word_to_percent(v.hsbk.brightness as u16);
+            //let b = colour::brightness_word_to_percent(v.hsbk.brightness.parse::<u16>().unwrap());
             Some(colour::HSB::new(h, s, b))
         },
         None => None,
