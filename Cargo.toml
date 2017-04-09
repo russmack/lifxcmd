@@ -6,4 +6,5 @@ description = "Command line program for controlling LIFX devices."
 
 [dependencies]
 rustylifx = { path = "../rustylifx" }
+clap = "2.23.1"
 
