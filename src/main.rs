@@ -23,6 +23,12 @@ fn main() {
             .value_name("IPADDRESS")
             .help("Specifies the address of the target device")
             .takes_value(true))
+        .arg(Arg::with_name("colour")
+            .short("c")
+            .long("colour")
+            .value_name("COLOUR NAME")
+            .help("Changes the colour")
+            .takes_value(true))
         .get_matches();
 
     let device = match matches.value_of("device").unwrap_or("") {
@@ -40,6 +46,15 @@ fn main() {
         }
     };
 
+    match matches.value_of("colour") {
+        Some(v) => {
+            messages::set_device_state(&device, &colour::get_colour(v), 1000, 0);
+            return;
+        }
+        None => (),
+    };
+
+
     // TODO: fix having to sleep between requests.
 
 
@@ -49,7 +64,7 @@ fn main() {
     let device = messages::get_device_state(device).unwrap();
     thread::sleep(Duration::from_millis(1000));
 
-    flash(&device, colour::RED, 200);
+    flash(&device, colour::get_colour("red"), 200);
     thread::sleep(Duration::from_millis(1000));
 
     // Extract current HSVK from device state data.
@@ -74,16 +89,16 @@ fn main() {
     };
 
     let fade_len: u32 = 3000;
-    fade(&device, colour::CRIMSON, fade_len);
+    fade(&device, colour::get_colour("crimson"), fade_len);
     thread::sleep(Duration::from_millis((fade_len + 1) as u64));
 
     // Fade device back to initial state.
     fade(&device, initial_state.unwrap(), 3000);
 
     thread::sleep(Duration::from_millis((fade_len + 1) as u64));
-    let _ = messages::set_device_state(&device, &colour::CHARTREUSE, 1000, 0);
-    thread::sleep(Duration::from_millis((fade_len + 1) as u64));
-    fade(&device, colour::CRIMSON, 300000);
+    let _ = messages::set_device_state(&device, &colour::get_colour("chartreuse"), 1000, 0);
+    thread::sleep(Duration::from_millis((1000) as u64));
+    fade(&device, colour::get_colour("crimson"), 300000);
 
     println!("\n");
 }
