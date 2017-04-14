@@ -25,6 +25,14 @@ OPTIONS:
     -f, --flash <FLASH COLOUR NAME>         Specifies the name of the colour to flash
     -i, --interval <FLASH INTERVAL>         The length of the flash
 ```
+Examples
+```
+Change colour to slate_gray instantly:
+./lifxcmd -c slate_gray
+
+A three second flash to coral:
+./lifxcmd -f coral -i 3000
+```
 
 ## Features
 
@@ -35,6 +43,8 @@ OPTIONS:
 - [X] Flash another colour
 - [X] Specify length of flash interval
 - [ ] Print current state of device
+- [ ] List supported colour names
+- [ ] Use RGB to specify colours
 
 ## License
 BSD 3-Clause: [LICENSE.txt](LICENSE.txt)
