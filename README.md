@@ -24,6 +24,7 @@ OPTIONS:
     -d, --duration <TRANSITION DURATION>    The duration of the colour transition
     -f, --flash <FLASH COLOUR NAME>         Specifies the name of the colour to flash
     -i, --interval <FLASH INTERVAL>         The length of the flash
+    -s, --state                             Show the current state of the device
 ```
 Examples
 ```
