@@ -5,22 +5,21 @@ use rustylifx::{colour, messages, network, response};
 use rustylifx::colour::{HSB, HSBK};
 use rustylifx::network::Device;
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::thread;
 use std::time::Duration;
 
 use clap::{Arg, App};
 
 fn main() {
-    // Flag to locate device, or specify IP address.
+    // Configure flags.
     let matches = App::new("Lifx Command")
         .version("0.1")
         .author("Russell Mackenzie")
         .about("Control Lifx devices from the command line.")
-        .arg(Arg::with_name("device")
-            .short("d")
-            .long("device")
-            .value_name("IPADDRESS")
+        .arg(Arg::with_name("address")
+            .short("a")
+            .long("address")
+            .value_name("HOST ADDRESS")
             .help("Specifies the address of the target device")
             .takes_value(true))
         .arg(Arg::with_name("colour")
@@ -29,9 +28,34 @@ fn main() {
             .value_name("COLOUR NAME")
             .help("Changes the colour")
             .takes_value(true))
+        .arg(Arg::with_name("flash")
+            .short("f")
+            .long("flash")
+            .value_name("FLASH COLOUR NAME")
+            .help("Specifies the name of the colour to flash")
+            .takes_value(true))
+        .arg(Arg::with_name("interval")
+            .short("i")
+            .long("interval")
+            .value_name("FLASH INTERVAL")
+            .help("The length of the flash")
+            .takes_value(true))
+        .arg(Arg::with_name("duration")
+            .short("d")
+            .long("duration")
+            .value_name("TRANSITION DURATION")
+            .help("The duration of the colour transition")
+            .takes_value(true))
+        .arg(Arg::with_name("state")
+            .short("s")
+            .long("state")
+            .value_name("CURRENT STATE")
+            .help("Show the current state of the device")
+            .takes_value(false))
         .get_matches();
 
-    let device = match matches.value_of("device").unwrap_or("") {
+    // Find the device, by flag, else broadcast.
+    let device = match matches.value_of("address").unwrap_or("") {
         "" => {
             // Locate device.
             messages::get_service().unwrap()
@@ -46,26 +70,72 @@ fn main() {
         }
     };
 
+    // Check if state display was specified.
+    match matches.is_present("state") {
+        true => {
+            let device = get_device_state(device);
+            display(&device);
+            return;
+        }
+        false => (),
+    };
+
+    // Check if transition duration was specified.
+    let duration = match matches.value_of("duration") {
+        Some(v) => {
+            match v.parse::<u32>() {
+                Ok(n) => n,
+                Err(e) => panic!("duration is not a valid number: {}", e),
+            }
+        }
+        None => 0,
+    };
+
+    // Set the colour if flag exists.
     match matches.value_of("colour") {
         Some(v) => {
-            messages::set_device_state(&device, &colour::get_colour(v), 1000, 0);
+            let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
             return;
         }
         None => (),
     };
 
+    // Check if the flash interval was specified.
+    let interval = match matches.value_of("interval") {
+        Some(v) => {
+            match v.parse::<u64>() {
+                Ok(n) => n,
+                Err(e) => panic!("interval is not a valid number: {}", e),
+            }
+        }
+        None => 1000,
+    };
 
-    // TODO: fix having to sleep between requests.
+    // Flash if flag exists.
+    match matches.value_of("flash") {
+        Some(v) => {
+            flash(device, colour::get_colour(v), interval);
+            return;
+        }
+        None => (),
+    };
 
+    // TODO: ponder fade
+    // let fade_len: u32 = 3000;
+    // fade(&device, colour::get_colour("crimson"), fade_len);
+    // thread::sleep(Duration::from_millis((fade_len + 1) as u64));
+    // Fade device back to initial state.
+    // fade(&device, initial_state.unwrap(), 3000);
+}
 
+fn get_device_state(device: Device) -> Device {
+    // TODO: sort out this hacky sleep.
     thread::sleep(Duration::from_millis(1000));
+    messages::get_device_state(device).unwrap()
+}
 
-    // Get current device state.
-    let device = messages::get_device_state(device).unwrap();
-    thread::sleep(Duration::from_millis(1000));
-
-    flash(&device, colour::get_colour("red"), 200);
-    thread::sleep(Duration::from_millis(1000));
+fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
+    let device = get_device_state(device);
 
     // Extract current HSVK from device state data.
     let resp = match device.response {
@@ -88,44 +158,7 @@ fn main() {
         None => None,
     };
 
-    let fade_len: u32 = 3000;
-    fade(&device, colour::get_colour("crimson"), fade_len);
-    thread::sleep(Duration::from_millis((fade_len + 1) as u64));
-
-    // Fade device back to initial state.
-    fade(&device, initial_state.unwrap(), 3000);
-
-    thread::sleep(Duration::from_millis((fade_len + 1) as u64));
-    let _ = messages::set_device_state(&device, &colour::get_colour("chartreuse"), 1000, 0);
-    thread::sleep(Duration::from_millis((1000) as u64));
-    fade(&device, colour::get_colour("crimson"), 300000);
-
-    println!("\n");
-}
-
-fn flash(device: &Device, flash_colour: HSB, duration_ms: u64) {
-    // Extract current HSVK from device state data.
-    let resp = match device.response {
-        Some(ref v) => v,
-        None => panic!("no response"),
-    };
-
-    let payload = match resp.payload {
-        response::Payload::State(ref v) => Some(v),
-        _ => None,
-    };
-
-    let current_state = match payload {
-        Some(v) => {
-            let h = colour::hue_word_to_degrees(v.hsbk.hue);
-            let s = colour::saturation_word_to_percent(v.hsbk.saturation as u16);
-            let b = colour::brightness_word_to_percent(v.hsbk.brightness as u16);
-            Some(colour::HSB::new(h, s, b))
-        }
-        None => None,
-    };
-
-    match current_state {
+    match initial_state {
         Some(v) => {
             // Change device state temporarily.
             let _ = messages::set_device_state(&device, &flash_colour, 2500, 0);
@@ -133,12 +166,57 @@ fn flash(device: &Device, flash_colour: HSB, duration_ms: u64) {
 
             // Return device to initial state.
             let _ = messages::set_device_state(&device, &v, 2500, 0);
-            println!("col:: {:?}", &v);
         }
         None => (),
     };
 }
 
-fn fade(device: &Device, to_colour: HSB, duration_ms: u32) {
-    let _ = messages::set_device_state(&device, &to_colour, 2500, duration_ms);
+// TODO: finish this.
+fn display(device: &Device) {
+    let resp = match device.response {
+        Some(ref v) => v,
+        None => {
+            println!("No response from device.");
+            return;
+        }
+    };
+    println!("\nDevice State:");
+    println!("Size: {}", resp.size);
+    println!("Source: {:?}", resp.source);
+    println!("Mac addr: {:?}", resp.mac_address);
+    println!("Firmware: {:?}", resp.firmware);
+
+    // packed byte
+    println!("Sequence num: {:?}", resp.sequence_number);
+    println!("Reserved_1 (timestamp?): {:?}", resp.reserved_1);
+    println!("Message type: {:?}", resp.message_type);
+    println!("Reserved_2: {:?}", resp.reserved_2);
+
+    // println!("Service: {:?}", resp.service);
+    // println!("Port: {:?}", resp.port);
+    // println!("Unknown: {:?}", resp.unknown);
+
+    println!("==========");
+    // let payload = match resp.payload {
+    // response::Payload::State(ref v) => Some(v),
+    // _ => None,
+    // };
+    //
+    // match payload {
+    // Some(v) => {
+    // println!("current payload body: {:?}", v.body);
+    // println!("current hue: {:?}", v.hsbk.hue);
+    // println!("current hue degrees: {:?}º",
+    // colour::hue_word_to_degrees(v.hsbk.hue));
+    // println!("current sat: {:?}", v.hsbk.saturation);
+    // println!("current sat percent: {:?}%",
+    // colour::saturation_word_to_percent(v.hsbk.saturation as u16));
+    // println!("current bri: {:?}", v.hsbk.brightness);
+    // println!("current bri percent: {:?}%",
+    // colour::brightness_word_to_percent(v.hsbk.brightness as u16));
+    // println!("current kel: {:?}", v.hsbk.kelvin);
+    // }
+    // None => (),
+    // };
+    //
 }
