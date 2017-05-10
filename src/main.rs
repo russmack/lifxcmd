@@ -180,11 +180,14 @@ fn display(device: &Device) {
             return;
         }
     };
+
     println!("\nDevice State:");
-    println!("Size: {}", resp.size);
     println!("Source: {:?}", resp.source);
     println!("Mac addr: {:?}", resp.mac_address);
     println!("Firmware: {:?}", resp.firmware);
+
+    println!("\nResponse:");
+    println!("Size: {}", resp.size);
 
     // packed byte
     println!("Sequence num: {:?}", resp.sequence_number);
@@ -192,31 +195,28 @@ fn display(device: &Device) {
     println!("Message type: {:?}", resp.message_type);
     println!("Reserved_2: {:?}", resp.reserved_2);
 
-    // println!("Service: {:?}", resp.service);
-    // println!("Port: {:?}", resp.port);
-    // println!("Unknown: {:?}", resp.unknown);
+    match resp.payload {
+        response::Payload::StateService(ref v) => {
+            println!("Service: {:?}", v.service);
+            println!("Port: {:?}", v.port);
+            println!("Unknown: {:?}", v.unknown);
+        }
+        response::Payload::State(ref v) => {
+            println!("Body: {:?}", v.body);
+            println!("HSBK: {:?}", v.hsbk);
+            println!("current hue: {:?}", v.hsbk.hue);
+            println!("current hue degrees: {:?}º",
+                     colour::hue_word_to_degrees(v.hsbk.hue));
+            println!("current sat: {:?}", v.hsbk.saturation);
+            println!("current sat percent: {:?}%",
+                     colour::saturation_word_to_percent(v.hsbk.saturation as u16));
+            println!("current bri: {:?}", v.hsbk.brightness);
+            println!("current bri percent: {:?}%",
+                     colour::brightness_word_to_percent(v.hsbk.brightness as u16));
+            println!("current kel: {:?}", v.hsbk.kelvin);
+        }
+        _ => (),
+    };
 
     println!("==========");
-    // let payload = match resp.payload {
-    // response::Payload::State(ref v) => Some(v),
-    // _ => None,
-    // };
-    //
-    // match payload {
-    // Some(v) => {
-    // println!("current payload body: {:?}", v.body);
-    // println!("current hue: {:?}", v.hsbk.hue);
-    // println!("current hue degrees: {:?}º",
-    // colour::hue_word_to_degrees(v.hsbk.hue));
-    // println!("current sat: {:?}", v.hsbk.saturation);
-    // println!("current sat percent: {:?}%",
-    // colour::saturation_word_to_percent(v.hsbk.saturation as u16));
-    // println!("current bri: {:?}", v.hsbk.brightness);
-    // println!("current bri percent: {:?}%",
-    // colour::brightness_word_to_percent(v.hsbk.brightness as u16));
-    // println!("current kel: {:?}", v.hsbk.kelvin);
-    // }
-    // None => (),
-    // };
-    //
 }
