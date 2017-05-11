@@ -171,7 +171,6 @@ fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
     };
 }
 
-// TODO: finish this.
 fn display(device: &Device) {
     let resp = match device.response {
         Some(ref v) => v,

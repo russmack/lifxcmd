@@ -5,7 +5,7 @@ A Rust command line program for controlling a LIFX light bulb.
 [![Build Status](https://travis-ci.org/russmack/lifxcmd.svg?branch=master)](https://travis-ci.org/russmack/lifxcmd)
 
 ---
-#### Status: Usable.
+#### Status: OK.
 ----
 
 ## Build
@@ -43,7 +43,7 @@ A three second flash to coral:
 - [X] Specify duration of colour transition
 - [X] Flash another colour
 - [X] Specify length of flash interval
-- [ ] Print current state of device
+- [X] Print current state of device
 - [ ] List supported colour names
 - [ ] Use RGB to specify colours
 
