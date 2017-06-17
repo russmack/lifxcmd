@@ -47,11 +47,29 @@ fn main() {
             .help("The duration of the colour transition")
             .takes_value(true))
         .arg(Arg::with_name("state")
-            .short("s")
-            .long("state")
+            .short("p")
+            .long("print")
             .value_name("CURRENT STATE")
             .help("Show the current state of the device")
             .takes_value(false))
+        .arg(Arg::with_name("hue")
+            .short("h")
+            .long("hue")
+            .value_name("HUE")
+            .help("Set the hue of the device")
+            .takes_value(true))
+        .arg(Arg::with_name("saturation")
+            .short("s")
+            .long("saturation")
+            .value_name("SATURATION")
+            .help("Set the saturation of the device")
+            .takes_value(true))
+        .arg(Arg::with_name("brightness")
+            .short("b")
+            .long("brightness")
+            .value_name("BRIGHTNESS")
+            .help("Set the brightness of the device")
+            .takes_value(true))
         .get_matches();
 
     // Find the device, by flag, else broadcast.
@@ -91,7 +109,7 @@ fn main() {
         None => 0,
     };
 
-    // Set the colour if flag exists.
+    // Set the colour by name if flag exists.
     match matches.value_of("colour") {
         Some(v) => {
             let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
@@ -99,6 +117,80 @@ fn main() {
         }
         None => (),
     };
+
+    // Set the colour by HSB if specified.
+    // HSB: 360º, 100%, 100%
+    let mut hue = match matches.value_of("hue") {
+        Some(v) => {
+            match v.parse::<i16>() {
+                Ok(n) => {
+                    if n >= 0 && n <= 360 {
+                        n
+                    } else {
+                        panic!("hue is outside the valid range, should be 0 - 360 (degrees)")
+                    }
+                }
+                Err(e) => panic!("hue is not a valid number: {}", e),
+            }
+        }
+        None => -1,
+    };
+
+    let mut saturation = match matches.value_of("saturation") {
+        Some(v) => {
+            match v.parse::<i16>() {
+                Ok(n) => {
+                    if n >= 0 && n <= 100 {
+                        n
+                    } else {
+                        panic!("saturation is outside the valid range, should be 0 - 100 (percent)")
+                    }
+                }
+                Err(e) => panic!("saturation is not a valid number: {}", e),
+            }
+        }
+        None => -1,
+    };
+
+    let mut brightness = match matches.value_of("brightness") {
+        Some(v) => {
+            match v.parse::<i16>() {
+                Ok(n) => {
+                    if n >= 0 && n <= 100 {
+                        n
+                    } else {
+                        panic!("brightness is outside the valid range, should be 0 - 100 (percent)")
+                    }
+                }
+                Err(e) => panic!("brightness is not a valid number: {}", e),
+            }
+        }
+        None => -1,
+    };
+
+    if hue >= 0 || saturation >= 0 || brightness >= 0 {
+        if hue < 0 {
+            hue = 360;
+        }
+
+        if saturation < 0 {
+            saturation = 100;
+        }
+
+        if brightness < 0 {
+            brightness = 100;
+        }
+
+        let _ = messages::set_device_state(&device,
+                                           &colour::HSB {
+                                               hue: hue as u16,
+                                               saturation: saturation as u8,
+                                               brightness: brightness as u8,
+                                           },
+                                           1000,
+                                           duration);
+        return;
+    }
 
     // Check if the flash interval was specified.
     let interval = match matches.value_of("interval") {
