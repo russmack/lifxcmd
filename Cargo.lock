@@ -1,6 +1,6 @@
 [root]
 name = "lifxcmd"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap 2.23.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustylifx 0.1.0 (git+https://github.com/russmack/rustylifx)",
