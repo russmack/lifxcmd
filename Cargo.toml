@@ -1,6 +1,6 @@
 [package]
 name = "lifxcmd"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Russell Mackenzie <russmackdev@gmail.com"]
 description = "Command line program for controlling LIFX devices."
 

@@ -22,8 +22,8 @@ USAGE:
     lifxcmd [FLAGS] [OPTIONS]
 
 FLAGS:
+    -e, --echo       Display the current state of the device
         --help       Prints help information
-    -p, --print      Show the current state of the device
     -V, --version    Prints version information
 
 OPTIONS:
@@ -34,6 +34,7 @@ OPTIONS:
     -f, --flash <FLASH COLOUR NAME>         Specifies the name of the colour to flash
     -h, --hue <HUE>                         Set the hue of the device
     -i, --interval <FLASH INTERVAL>         The length of the flash
+    -p, --power <POWER LEVEL>               Changes the power level on/off
     -s, --saturation <SATURATION>           Set the saturation of the device
 ```
 
@@ -47,12 +48,17 @@ Change colour to green instantly by hue, saturation, brightness:
 
 A three second flash to coral:
 ./lifxcmd -f coral -i 3000
+
+Turn light off.
+./lifxcmd -p off
 ```
 
 ## Features
 
 - [X] Locate device
 - [X] Specify device
+- [X] Power on device
+- [X] Power off device
 - [X] Change device colour
 - [X] Specify duration of colour transition
 - [X] Flash another colour

@@ -22,6 +22,12 @@ fn main() {
             .value_name("HOST ADDRESS")
             .help("Specifies the address of the target device")
             .takes_value(true))
+        .arg(Arg::with_name("power")
+            .short("p")
+            .long("power")
+            .value_name("POWER LEVEL")
+            .help("Changes the power level on/off")
+            .takes_value(true))
         .arg(Arg::with_name("colour")
             .short("c")
             .long("colour")
@@ -46,11 +52,11 @@ fn main() {
             .value_name("TRANSITION DURATION")
             .help("The duration of the colour transition")
             .takes_value(true))
-        .arg(Arg::with_name("state")
-            .short("p")
-            .long("print")
-            .value_name("CURRENT STATE")
-            .help("Show the current state of the device")
+        .arg(Arg::with_name("echo")
+            .short("e")
+            .long("echo")
+            .value_name("DISPLAY CURRENT STATE")
+            .help("Display the current state of the device")
             .takes_value(false))
         .arg(Arg::with_name("hue")
             .short("h")
@@ -96,6 +102,19 @@ fn main() {
             return;
         }
         false => (),
+    };
+
+    // Set the power level on/off.
+    match matches.value_of("power") {
+        Some(v) => {
+            let _ = match v {
+                "on"  => messages::set_device_on(&device),
+                "off" => messages::set_device_off(&device),
+                _ => panic!("power state is invalid, should be on or off."),
+            };
+            return ();
+        }
+        None => (),
     };
 
     // Check if transition duration was specified.
