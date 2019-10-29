@@ -95,26 +95,19 @@ fn main() {
     };
 
     // Check if state display was specified.
-    match matches.is_present("state") {
-        true => {
-            let device = get_device_state(device);
-            display(&device);
-            return;
-        }
-        false => (),
-    };
+    if matches.is_present("state") {
+        let device = get_device_state(device);
+        display(&device);
+        return;
+    }
 
     // Set the power level on/off.
-    match matches.value_of("power") {
-        Some(v) => {
-            let _ = match v {
-                "on"  => messages::set_device_on(&device),
-                "off" => messages::set_device_off(&device),
-                _ => panic!("power state is invalid, should be on or off."),
-            };
-            return ();
-        }
-        None => (),
+    if let Some(v) = matches.value_of("power") {
+        let _ = match v {
+            "on"  => messages::set_device_on(&device),
+            "off" => messages::set_device_off(&device),
+            _ => panic!("power state is invalid, should be on or off."),
+        };
     };
 
     // Check if transition duration was specified.
@@ -129,13 +122,10 @@ fn main() {
     };
 
     // Set the colour by name if flag exists.
-    match matches.value_of("colour") {
-        Some(v) => {
-            let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
-            return;
-        }
-        None => (),
-    };
+    if let Some(v) = matches.value_of("colour") {
+        let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
+        return;
+    }
 
     // Set the colour by HSB if specified.
     // HSB: 360º, 100%, 100%
@@ -223,13 +213,10 @@ fn main() {
     };
 
     // Flash if flag exists.
-    match matches.value_of("flash") {
-        Some(v) => {
-            flash(device, colour::get_colour(v), interval);
-            return;
-        }
-        None => (),
-    };
+    if let Some(v) = matches.value_of("flash") {
+        flash(device, colour::get_colour(v), interval);
+        return;
+    }
 
     // TODO: ponder fade
     // let fade_len: u32 = 3000;
@@ -269,17 +256,14 @@ fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
         None => None,
     };
 
-    match initial_state {
-        Some(v) => {
-            // Change device state temporarily.
-            let _ = messages::set_device_state(&device, &flash_colour, 2500, 0);
-            thread::sleep(Duration::from_millis(duration_ms));
+    if let Some(v) = initial_state {
+        // Change device state temporarily.
+        let _ = messages::set_device_state(&device, &flash_colour, 2500, 0);
+        thread::sleep(Duration::from_millis(duration_ms));
 
-            // Return device to initial state.
-            let _ = messages::set_device_state(&device, &v, 2500, 0);
-        }
-        None => (),
-    };
+        // Return device to initial state.
+        let _ = messages::set_device_state(&device, &v, 2500, 0);
+    }
 }
 
 fn display(device: &Device) {
