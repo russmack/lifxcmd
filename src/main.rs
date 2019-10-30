@@ -5,6 +5,7 @@ use rustylifx::{colour, messages, network, response};
 use rustylifx::colour::{HSB, HSBK};
 use rustylifx::network::Device;
 
+use std::process;
 use std::thread;
 use std::time::Duration;
 
@@ -13,7 +14,7 @@ use clap::{Arg, App};
 fn main() {
     // Configure flags.
     let matches = App::new("Lifx Command")
-        .version("0.1")
+        .version("0.1.1")
         .author("Russell Mackenzie")
         .about("Control Lifx devices from the command line.")
         .arg(Arg::with_name("address")
@@ -82,8 +83,14 @@ fn main() {
     let device = match matches.value_of("address").unwrap_or("") {
         "" => {
             // Locate device.
-            messages::get_service().unwrap()
-        }
+            match messages::get_service() {
+                Ok(v)   => v,
+                Err(e)  => {
+                    println!("failed finding device: {}", e);
+                    process::exit(1)
+                },
+            }
+        },
         ip => {
             // Set device.
             const PORT: u16 = 56700;
@@ -91,7 +98,7 @@ fn main() {
                 socket_addr: format!("{}:{}", ip, PORT).parse().expect("invalid socket address"),
                 response: None,
             }
-        }
+        },
     };
 
     // Check if state display was specified.
@@ -103,11 +110,19 @@ fn main() {
 
     // Set the power level on/off.
     if let Some(v) = matches.value_of("power") {
-        let _ = match v {
+        let res = match v {
             "on"  => messages::set_device_on(&device),
             "off" => messages::set_device_off(&device),
-            _ => panic!("power state is invalid, should be on or off."),
+            _ => {
+                println!("power state is invalid, should be on or off.\nSee `lifxcmd --help`.");
+                process::exit(1);
+            },
         };
+
+        if res.is_err() {
+            println!("failed setting device power state: {:?}", res.err());
+            process::exit(1);
+        }
     };
 
     // Check if transition duration was specified.
