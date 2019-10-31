@@ -1,15 +1,50 @@
 extern crate rustylifx;
 extern crate clap;
+extern crate termcolor;
 
 use rustylifx::{colour, messages, network, response};
 use rustylifx::colour::{HSB, HSBK};
 use rustylifx::network::Device;
 
+use std::io;
+use std::io::Write;
 use std::process;
 use std::thread;
 use std::time::Duration;
 
 use clap::{Arg, App};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
+fn exit_usage(s: String) {
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))) {
+        Ok(v) => {},
+        Err(e) => {},
+    };
+
+    match writeln!(&mut stdout, "\n\n{}", s) {
+        Ok(v) => {},
+        Err(e) => {},
+    };
+
+    println!("Usage: `lifxcmd --help`");
+    process::exit(1);
+}
+
+fn exit_error(s: String) {
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
+        Ok(v) => {},
+        Err(e) => {},
+    };
+
+    match writeln!(&mut stdout, "\n\n{}", s) {
+        Ok(v) => {},
+        Err(e) => {},
+    };
+    
+    process::exit(1);
+}
 
 fn main() {
     // Configure flags.
@@ -86,8 +121,8 @@ fn main() {
             match messages::get_service() {
                 Ok(v)   => v,
                 Err(e)  => {
-                    println!("failed finding device: {}", e);
-                    process::exit(1)
+                    exit_error(format!("Failed finding device: {}",e));
+                    return
                 },
             }
         },
@@ -105,7 +140,7 @@ fn main() {
     if matches.is_present("state") {
         let device = get_device_state(device);
         display(&device);
-        return;
+        return
     }
 
     // Set the power level on/off.
@@ -114,14 +149,14 @@ fn main() {
             "on"  => messages::set_device_on(&device),
             "off" => messages::set_device_off(&device),
             _ => {
-                println!("power state is invalid, should be on or off.\nSee `lifxcmd --help`.");
-                process::exit(1);
+                exit_usage("Power state is invalid, should be on or off.".to_string());
+                return
             },
         };
 
         if res.is_err() {
-            println!("failed setting device power state: {:?}", res.err());
-            process::exit(1);
+            exit_error(format!("Failed setting device power state: {:?}", res.err()));
+            return
         }
     };
 
@@ -130,7 +165,10 @@ fn main() {
         Some(v) => {
             match v.parse::<u32>() {
                 Ok(n) => n,
-                Err(e) => panic!("duration is not a valid number: {}", e),
+                Err(e) => {
+                    exit_usage(format!("Duration is not a valid number: {}", e));
+                    return
+                },
             }
         }
         None => 0,
@@ -139,7 +177,7 @@ fn main() {
     // Set the colour by name if flag exists.
     if let Some(v) = matches.value_of("colour") {
         let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
-        return;
+        return
     }
 
     // Set the colour by HSB if specified.
@@ -151,10 +189,14 @@ fn main() {
                     if n >= 0 && n <= 360 {
                         n
                     } else {
-                        panic!("hue is outside the valid range, should be 0 - 360 (degrees)")
+                        exit_usage(format!("Hue is outside the valid range, should be 0 - 360 (degrees)"));
+                        return
                     }
                 }
-                Err(e) => panic!("hue is not a valid number: {}", e),
+                Err(e) => {
+                    exit_usage(format!("Hue is not a valid number: {}", e));
+                    return
+                },
             }
         }
         None => -1,
@@ -167,10 +209,14 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        panic!("saturation is outside the valid range, should be 0 - 100 (percent)")
+                        exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        return
                     }
                 }
-                Err(e) => panic!("saturation is not a valid number: {}", e),
+                Err(e) => {
+                    exit_usage(format!("Saturation is not a valid number: {}", e));
+                    return
+                },
             }
         }
         None => -1,
@@ -183,10 +229,14 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        panic!("brightness is outside the valid range, should be 0 - 100 (percent)")
+                        exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        return
                     }
                 }
-                Err(e) => panic!("brightness is not a valid number: {}", e),
+                Err(e) => {
+                    exit_usage(format!("Brightness is not a valid number: {}", e));
+                    return
+                },
             }
         }
         None => -1,
@@ -213,7 +263,7 @@ fn main() {
                                            },
                                            1000,
                                            duration);
-        return;
+        return
     }
 
     // Check if the flash interval was specified.
@@ -221,7 +271,10 @@ fn main() {
         Some(v) => {
             match v.parse::<u64>() {
                 Ok(n) => n,
-                Err(e) => panic!("interval is not a valid number: {}", e),
+                Err(e) => {
+                    exit_usage(format!("Interval is not a valid number: {}", e));
+                    return
+                },
             }
         }
         None => 1000,
@@ -230,8 +283,8 @@ fn main() {
     // Flash if flag exists.
     if let Some(v) = matches.value_of("flash") {
         flash(device, colour::get_colour(v), interval);
-        return;
-    }
+        return
+    };
 
     // TODO: ponder fade
     // let fade_len: u32 = 3000;

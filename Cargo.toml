@@ -8,4 +8,5 @@ description = "Command line program for controlling LIFX devices."
 rustylifx = { git = "https://github.com/russmack/rustylifx" }
 #rustylifx = { path = "../rustylifx" }
 clap = "2.23.1"
+termcolor = "1.0.5"
 
