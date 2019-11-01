@@ -3,10 +3,9 @@ extern crate clap;
 extern crate termcolor;
 
 use rustylifx::{colour, messages, network, response};
-use rustylifx::colour::{HSB, HSBK};
+use rustylifx::colour::HSB;
 use rustylifx::network::Device;
 
-use std::io;
 use std::io::Write;
 use std::process;
 use std::thread;
@@ -18,29 +17,28 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 fn exit_usage(s: String) {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))) {
-        Ok(v) => {},
-        Err(e) => {},
+        Ok(_) => (),
+        Err(e) => println!("Failed setting terminal output colour: {}", e),
     };
 
-    match writeln!(&mut stdout, "\n\n{}", s) {
-        Ok(v) => {},
-        Err(e) => {},
+    let s_out = format!("\n\n{}\nUsage: `lifxcmd --help`", s);
+    if writeln!(&mut stdout,"{}", s_out).is_err() {
+        println!("{}", s_out);
     };
 
-    println!("Usage: `lifxcmd --help`");
     process::exit(1);
 }
 
 fn exit_error(s: String) {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     match stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))) {
-        Ok(v) => {},
-        Err(e) => {},
+        Ok(_) => (),
+        Err(e) => println!("Failed setting terminal output colour: {}", e),
     };
 
-    match writeln!(&mut stdout, "\n\n{}", s) {
-        Ok(v) => {},
-        Err(e) => {},
+    let s_out = format!("\n\n{}", s);
+    if writeln!(&mut stdout,"{}", s_out).is_err() {
+        println!("{}", s_out);
     };
     
     process::exit(1);
@@ -189,7 +187,7 @@ fn main() {
                     if n >= 0 && n <= 360 {
                         n
                     } else {
-                        exit_usage(format!("Hue is outside the valid range, should be 0 - 360 (degrees)"));
+                        exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)".to_string());
                         return
                     }
                 }
