@@ -86,9 +86,9 @@ fn main() {
             .value_name("TRANSITION DURATION")
             .help("The duration of the colour transition")
             .takes_value(true))
-        .arg(Arg::with_name("echo")
-            .short("e")
-            .long("echo")
+        .arg(Arg::with_name("report")
+            .short("r")
+            .long("report")
             .value_name("DISPLAY CURRENT STATE")
             .help("Display the current state of the device")
             .takes_value(false))
@@ -135,7 +135,7 @@ fn main() {
     };
 
     // Check if state display was specified.
-    if matches.is_present("state") {
+    if matches.is_present("report") {
         let device = get_device_state(device);
         display(&device);
         return

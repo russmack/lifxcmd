@@ -62,7 +62,7 @@ dependencies = [
 [[package]]
 name = "rustylifx"
 version = "0.2.0"
-source = "git+https://github.com/russmack/rustylifx#12900482c26a1ee5ee62d3b13f780f7deefd02ae"
+source = "git+https://github.com/russmack/rustylifx#2c7e5d268e57acfc89655f7699084e4d0cbd7823"
 
 [[package]]
 name = "strsim"
