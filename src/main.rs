@@ -6,90 +6,12 @@ use rustylifx::{colour, messages, network, response};
 use rustylifx::colour::HSB;
 use rustylifx::network::Device;
 
-use std::io::Write;
-use std::process;
 use std::thread;
 use std::time::Duration;
 
 use clap::{Arg, App};
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-fn print_line_info_prefix(icon: &str, status: &str, message: &str, colour_primary: Color, colour_secondary: Color) {
-    // Display icon.
-    print_string(icon, colour_primary, false);
-
-    // Display status left brace.
-    let left_brace = " [";
-    print_string(left_brace, colour_secondary, false);
-    
-    // Display status word.
-    print_string(status, colour_primary, false);
-
-    // Display status right brace.
-    let right_brace = "]\t";
-    print_string(right_brace, colour_secondary, false);
-    
-    // Display message.
-    print_string(message, colour_secondary, false);
-}
-
-fn print_string(s: &str, colour: Color, bold: bool) {
-    let mut stdout = StandardStream::stdout(ColorChoice::Always);
-
-    let mut colour_spec = ColorSpec::new();
-    colour_spec.set_fg(Some(colour));
-    colour_spec.set_bold(bold);
-
-    match stdout.set_color(&colour_spec) {
-        Ok(_) => (),
-        Err(e) => println!("Failed setting terminal output colour: {}", e),
-    };
-    let s_out = format!("{}", s);
-    if write!(&mut stdout,"{}", s_out).is_err() {
-        print!("{}", s_out);
-    };
-}
-
-fn print_response_header() {
-    println!("\n");
-    print_string("== ", Color::Cyan, false);
-    print_string("Result", Color::White, true);
-    print_string(" ===========================================================================", Color::Cyan, false);
-    println!("\n");
-}
-
-fn exit_usage(s: String) {
-    print_response_header();
-
-    // Display error.
-    print_line_info_prefix("!", "invalid", &s, Color::Yellow, Color::White);
-
-    // Display usage.
-    println!("");
-    let s_out = format!("lifxcmd --help");
-    print_line_info_prefix("→", "usage", &s_out, Color::Cyan, Color::White);
-    println!("\n");
-
-    process::exit(1);
-}
-
-fn exit_error(s: String) {
-    print_response_header();
-
-    print_line_info_prefix("✘", "error", &s, Color::Red, Color::White);
-    println!("\n");
-
-    process::exit(1);
-}
-
-fn exit_done() {
-    print_response_header();
-
-    print_line_info_prefix("∗", "Done", "", Color::Green, Color::White);
-    println!("\n");
-
-    process::exit(0);
-}
+pub mod cli;
 
 fn main() {
     // Configure flags.
@@ -166,7 +88,7 @@ fn main() {
             match messages::get_service() {
                 Ok(v)   => v,
                 Err(e)  => {
-                    exit_error(format!("Failed finding device: {}",e));
+                    cli::exit_error(format!("Failed finding device: {}",e));
                     return
                 },
             }
@@ -194,13 +116,13 @@ fn main() {
             "on"  => messages::set_device_on(&device),
             "off" => messages::set_device_off(&device),
             _ => {
-                exit_usage("Power state is invalid, should be on or off.".to_string());
+                cli::exit_usage("Power state is invalid, should be on or off.".to_string());
                 return
             },
         };
 
         if res.is_err() {
-            exit_error(format!("Failed setting device power state: {:?}", res.err()));
+            cli::exit_error(format!("Failed setting device power state: {:?}", res.err()));
             return
         }
     };
@@ -211,7 +133,7 @@ fn main() {
             match v.parse::<u32>() {
                 Ok(n) => n,
                 Err(e) => {
-                    exit_usage(format!("Duration is not a valid number: {}", e));
+                    cli::exit_usage(format!("Duration is not a valid number: {}", e));
                     return
                 },
             }
@@ -234,12 +156,12 @@ fn main() {
                     if n >= 0 && n <= 360 {
                         n
                     } else {
-                        exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)".to_string());
+                        cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)".to_string());
                         return
                     }
                 }
                 Err(e) => {
-                    exit_usage(format!("Hue is not a valid number: {}", e));
+                    cli::exit_usage(format!("Hue is not a valid number: {}", e));
                     return
                 },
             }
@@ -254,12 +176,12 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        cli::exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)".to_string());
                         return
                     }
                 }
                 Err(e) => {
-                    exit_usage(format!("Saturation is not a valid number: {}", e));
+                    cli::exit_usage(format!("Saturation is not a valid number: {}", e));
                     return
                 },
             }
@@ -274,12 +196,12 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        cli::exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)".to_string());
                         return
                     }
                 }
                 Err(e) => {
-                    exit_usage(format!("Brightness is not a valid number: {}", e));
+                    cli::exit_usage(format!("Brightness is not a valid number: {}", e));
                     return
                 },
             }
@@ -317,7 +239,7 @@ fn main() {
             match v.parse::<u64>() {
                 Ok(n) => n,
                 Err(e) => {
-                    exit_usage(format!("Interval is not a valid number: {}", e));
+                    cli::exit_usage(format!("Interval is not a valid number: {}", e));
                     return
                 },
             }
@@ -338,7 +260,7 @@ fn main() {
     // Fade device back to initial state.
     // fade(&device, initial_state.unwrap(), 3000);
 
-    exit_done();
+    cli::exit_done();
 }
 
 fn get_device_state(device: Device) -> Device {
