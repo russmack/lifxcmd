@@ -47,11 +47,11 @@ pub fn print_response_header() {
     println!("\n");
 }
 
-pub fn exit_usage(s: String) {
+pub fn exit_usage(s: &str) {
     print_response_header();
 
     // Display error.
-    print_line_info_prefix("!", "invalid", &s, Color::Yellow, Color::White);
+    print_line_info_prefix("!", "invalid", s, Color::Yellow, Color::White);
 
     // Display usage.
     println!("");
@@ -62,10 +62,10 @@ pub fn exit_usage(s: String) {
     process::exit(1);
 }
 
-pub fn exit_error(s: String) {
+pub fn exit_error(s: &str) {
     print_response_header();
 
-    print_line_info_prefix("✘", "error", &s, Color::Red, Color::White);
+    print_line_info_prefix("✘", "error", s, Color::Red, Color::White);
     println!("\n");
 
     process::exit(1);

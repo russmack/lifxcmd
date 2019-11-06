@@ -88,7 +88,7 @@ fn main() {
             match messages::get_service() {
                 Ok(v)   => v,
                 Err(e)  => {
-                    cli::exit_error(format!("Failed finding device: {}",e));
+                    cli::exit_error(&format!("Failed finding device: {}",e));
                     return
                 },
             }
@@ -116,13 +116,13 @@ fn main() {
             "on"  => messages::set_device_on(&device),
             "off" => messages::set_device_off(&device),
             _ => {
-                cli::exit_usage("Power state is invalid, should be on or off.".to_string());
+                cli::exit_usage("Power state is invalid, should be on or off.");
                 return
             },
         };
 
         if res.is_err() {
-            cli::exit_error(format!("Failed setting device power state: {:?}", res.err()));
+            cli::exit_error(&format!("Failed setting device power state: {:?}", res.err()));
             return
         }
     };
@@ -133,7 +133,7 @@ fn main() {
             match v.parse::<u32>() {
                 Ok(n) => n,
                 Err(e) => {
-                    cli::exit_usage(format!("Duration is not a valid number: {}", e));
+                    cli::exit_usage(&format!("Duration is not a valid number: {}", e));
                     return
                 },
             }
@@ -156,12 +156,12 @@ fn main() {
                     if n >= 0 && n <= 360 {
                         n
                     } else {
-                        cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)".to_string());
+                        cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)");
                         return
                     }
                 }
                 Err(e) => {
-                    cli::exit_usage(format!("Hue is not a valid number: {}", e));
+                    cli::exit_usage(&format!("Hue is not a valid number: {}", e));
                     return
                 },
             }
@@ -176,12 +176,12 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        cli::exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        cli::exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)");
                         return
                     }
                 }
                 Err(e) => {
-                    cli::exit_usage(format!("Saturation is not a valid number: {}", e));
+                    cli::exit_usage(&format!("Saturation is not a valid number: {}", e));
                     return
                 },
             }
@@ -196,12 +196,12 @@ fn main() {
                     if n >= 0 && n <= 100 {
                         n
                     } else {
-                        cli::exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)".to_string());
+                        cli::exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)");
                         return
                     }
                 }
                 Err(e) => {
-                    cli::exit_usage(format!("Brightness is not a valid number: {}", e));
+                    cli::exit_usage(&format!("Brightness is not a valid number: {}", e));
                     return
                 },
             }
@@ -239,7 +239,7 @@ fn main() {
             match v.parse::<u64>() {
                 Ok(n) => n,
                 Err(e) => {
-                    cli::exit_usage(format!("Interval is not a valid number: {}", e));
+                    cli::exit_usage(&format!("Interval is not a valid number: {}", e));
                     return
                 },
             }
