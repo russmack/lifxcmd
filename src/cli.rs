@@ -37,6 +37,13 @@ pub fn print_string(s: &str, colour: Color, bold: bool) {
     if write!(&mut stdout,"{}", s_out).is_err() {
         print!("{}", s_out);
     };
+
+    // Reset colour to default white.
+    colour_spec.set_fg(Some(Color::White));
+    match stdout.set_color(&colour_spec) {
+        Ok(_) => (),
+        Err(e) => println!("Failed setting terminal output colour: {}", e),
+    };
 }
 
 pub fn print_response_header() {
@@ -71,11 +78,16 @@ pub fn exit_error(s: &str) {
     process::exit(1);
 }
 
-pub fn exit_done() {
+pub fn exit_done(s: &str) {
     print_response_header();
 
-    print_line_info_prefix("∗", "Done", "", Color::Green, Color::White);
+    println!("{}", s);
+    print_done();
     println!("\n");
 
     process::exit(0);
+}
+
+pub fn print_done() {
+    print_line_info_prefix("∗", "Done", "", Color::Green, Color::White);
 }

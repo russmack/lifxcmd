@@ -10,6 +10,7 @@ use std::thread;
 use std::time::Duration;
 
 use clap::{Arg, App};
+use termcolor::Color;
 
 pub mod cli;
 
@@ -85,6 +86,7 @@ fn main() {
     let device = match matches.value_of("address").unwrap_or("") {
         "" => {
             // Locate device.
+            cli::print_line_info_prefix("↗", "Sending", "Locating device...\n\n", Color::Cyan, Color::White);
             match messages::get_service() {
                 Ok(v)   => v,
                 Err(e)  => {
@@ -105,6 +107,8 @@ fn main() {
 
     // Check if state display was specified.
     if matches.is_present("report") {
+        //cli::print_string("Requesting device status report...\n", Color::Cyan, false);
+        cli::print_line_info_prefix("↗", "Sending", "Requesting device status report...\n\n", Color::Cyan, Color::White);
         let device = get_device_state(device);
         display(&device);
         return
@@ -113,8 +117,14 @@ fn main() {
     // Set the power level on/off.
     if let Some(v) = matches.value_of("power") {
         let res = match v {
-            "on"  => messages::set_device_on(&device),
-            "off" => messages::set_device_off(&device),
+            "on"  => {
+                cli::print_string("\nSetting device power to on...\n", Color::Cyan, false);
+                messages::set_device_on(&device)
+            },
+            "off" => {
+                cli::print_string("\nSetting device power to off...\n", Color::Cyan, false);
+                messages::set_device_off(&device)
+            },
             _ => {
                 cli::exit_usage("Power state is invalid, should be on or off.");
                 return
@@ -260,7 +270,7 @@ fn main() {
     // Fade device back to initial state.
     // fade(&device, initial_state.unwrap(), 3000);
 
-    cli::exit_done();
+    cli::exit_done("");
 }
 
 fn get_device_state(device: Device) -> Device {
@@ -312,42 +322,60 @@ fn display(device: &Device) {
         }
     };
 
-    println!("\nDevice State:");
-    println!("Source: {:?}", resp.source);
-    println!("Mac addr: {:?}", resp.mac_address);
-    println!("Firmware: {:?}", resp.firmware);
-
-    println!("\nResponse:");
-    println!("Size: {}", resp.size);
+    let device_state = format!(
+        "\nDevice State:
+        Source: {:?}
+        Mac addr: {:?}
+        Firmware: {:?}", resp.source, resp.mac_address, resp.firmware);
 
     // packed byte
-    println!("Sequence num: {:?}", resp.sequence_number);
-    println!("Reserved_1 (timestamp?): {:?}", resp.reserved_1);
-    println!("Message type: {:?}", resp.message_type);
-    println!("Reserved_2: {:?}", resp.reserved_2);
+    let response_packed_byte = format!(
+        "\nResponse:
+        Size: {}
+        Sequence num: {:?}
+        Reserved_1 (timestamp?): {:?}
+        Message type: {:?}
+        Reserved_2: {:?}"
+            , resp.size, resp.sequence_number, resp.reserved_1, resp.message_type, resp.reserved_2);
 
-    match resp.payload {
+    let payload = match resp.payload {
         response::Payload::StateService(ref v) => {
-            println!("Service: {:?}", v.service);
-            println!("Port: {:?}", v.port);
-            println!("Unknown: {:?}", v.unknown);
-        }
+            format!(
+                "Service: {:?}
+                Port: {:?}
+                Unknown: {:?}"
+                , v.service
+                , v.port
+                , v.unknown)
+        },
         response::Payload::State(ref v) => {
-            println!("Body: {:?}", v.body);
-            println!("HSBK: {:?}", v.hsbk);
-            println!("current hue: {:?}", v.hsbk.hue);
-            println!("current hue degrees: {:?}º",
-                     colour::hue_word_to_degrees(v.hsbk.hue));
-            println!("current sat: {:?}", v.hsbk.saturation);
-            println!("current sat percent: {:?}%",
-                     colour::saturation_word_to_percent(v.hsbk.saturation as u16));
-            println!("current bri: {:?}", v.hsbk.brightness);
-            println!("current bri percent: {:?}%",
-                     colour::brightness_word_to_percent(v.hsbk.brightness as u16));
-            println!("current kel: {:?}", v.hsbk.kelvin);
-        }
-        _ => (),
+            format!(
+                "Body: {:?}
+                HSBK: {:?}
+                
+                Current hue: {:?}
+                Current hue degrees: {:?}º
+
+                Current saturation: {:?}
+                Current saturation percent: {:?}%
+                
+                Current brightness: {:?}
+                Current brightness percent: {:?}%
+                
+                Current kel: {:?}"
+                , v.body
+                , v.hsbk
+                , v.hsbk.hue
+                , colour::hue_word_to_degrees(v.hsbk.hue)
+                , v.hsbk.saturation
+                , colour::saturation_word_to_percent(v.hsbk.saturation as u16)
+                , v.hsbk.brightness
+                , colour::brightness_word_to_percent(v.hsbk.brightness as u16)
+                , v.hsbk.kelvin)
+        },
+        _ => "Unrecognised response.".to_string(),
     };
 
-    println!("==========");
+    let report = format!("{}\n{}\n{}\n", device_state, response_packed_byte, payload);
+    cli::exit_done(&report);
 }
