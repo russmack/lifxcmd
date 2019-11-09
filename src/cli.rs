@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Write;
 use std::process;
 
@@ -91,3 +92,36 @@ pub fn exit_done(s: &str) {
 pub fn print_done() {
     print_line_info_prefix("∗", "Done", "", Color::Green, Color::White);
 }
+
+pub fn format_device_state(map: &HashMap<&str, String>) -> String {
+    let print_order = [
+        "Source",
+        "Firmware",
+        "Mac addr",
+        "Message type",
+        "Size",
+        "Current hue",
+        "Current hue degrees",
+        "Current saturation",
+        "Current saturation percent",
+        "Current brightness",
+        "Current brightness percent",
+        "Current kel",
+        "Sequence num",
+        "Reserved_1",
+        "Reserved_2",
+    ];
+
+
+    let mut report = String::new();
+    for &k in &print_order {
+        match map.get(k) {
+            Some(v) =>
+            report.push_str(&format!("{: <30}: {}\n", k, v)),
+            None => {},
+        }
+    }
+
+    report
+}
+

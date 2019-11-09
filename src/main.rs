@@ -2,15 +2,16 @@ extern crate rustylifx;
 extern crate clap;
 extern crate termcolor;
 
-use rustylifx::{colour, messages, network, response};
-use rustylifx::colour::HSB;
-use rustylifx::network::Device;
-
+use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
 use clap::{Arg, App};
 use termcolor::Color;
+
+use rustylifx::{colour, messages, network, response};
+use rustylifx::colour::HSB;
+use rustylifx::network::Device;
 
 pub mod cli;
 
@@ -110,7 +111,7 @@ fn main() {
         //cli::print_string("Requesting device status report...\n", Color::Cyan, false);
         cli::print_line_info_prefix("↗", "Sending", "Requesting device status report...\n\n", Color::Cyan, Color::White);
         let device = get_device_state(device);
-        display(&device);
+        display_device_state(&device);
         return
     }
 
@@ -313,7 +314,7 @@ fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
     }
 }
 
-fn display(device: &Device) {
+fn display_device_state(device: &Device) {
     let resp = match device.response {
         Some(ref v) => v,
         None => {
@@ -322,60 +323,40 @@ fn display(device: &Device) {
         }
     };
 
-    let device_state = format!(
-        "\nDevice State:
-        Source: {:?}
-        Mac addr: {:?}
-        Firmware: {:?}", resp.source, resp.mac_address, resp.firmware);
+    let mut device_state: HashMap<&str, String> = HashMap::new();
+    device_state.insert("Source",       format!("{}", resp.source));
+    device_state.insert("Mac addr",     format!("{}", resp.mac_address));
+    device_state.insert("Firmware",     format!("{}", resp.firmware));
+    device_state.insert("Size",         format!("{}", resp.size));
+    device_state.insert("Sequence num", format!("{}", resp.sequence_number));
+    device_state.insert("Reserved_1",   format!("{}", resp.reserved_1));
+    device_state.insert("Reserved_2",   format!("{}", resp.reserved_2));
+    device_state.insert("Message type", format!("{}", resp.message_type));
 
-    // packed byte
-    let response_packed_byte = format!(
-        "\nResponse:
-        Size: {}
-        Sequence num: {:?}
-        Reserved_1 (timestamp?): {:?}
-        Message type: {:?}
-        Reserved_2: {:?}"
-            , resp.size, resp.sequence_number, resp.reserved_1, resp.message_type, resp.reserved_2);
-
-    let payload = match resp.payload {
+    match resp.payload {
         response::Payload::StateService(ref v) => {
-            format!(
-                "Service: {:?}
-                Port: {:?}
-                Unknown: {:?}"
-                , v.service
-                , v.port
-                , v.unknown)
+            device_state.insert("Service", format!("{}", v.service));
+            device_state.insert("Port", format!("{}", v.port));
+            device_state.insert("Unknown", format!("{}", v.unknown));
         },
         response::Payload::State(ref v) => {
-            format!(
-                "Body: {:?}
-                HSBK: {:?}
-                
-                Current hue: {:?}
-                Current hue degrees: {:?}º
-
-                Current saturation: {:?}
-                Current saturation percent: {:?}%
-                
-                Current brightness: {:?}
-                Current brightness percent: {:?}%
-                
-                Current kel: {:?}"
-                , v.body
-                , v.hsbk
-                , v.hsbk.hue
-                , colour::hue_word_to_degrees(v.hsbk.hue)
-                , v.hsbk.saturation
-                , colour::saturation_word_to_percent(v.hsbk.saturation as u16)
-                , v.hsbk.brightness
-                , colour::brightness_word_to_percent(v.hsbk.brightness as u16)
-                , v.hsbk.kelvin)
+                device_state.insert("Current hue", format!("{:?}", v.hsbk.hue));
+                device_state.insert("Current hue degrees", 
+                    format!("{:?}º", colour::hue_word_to_degrees(v.hsbk.hue)));
+                device_state.insert("Current saturation", format!("{:?}", v.hsbk.saturation));
+                device_state.insert("Current saturation percent", 
+                    format!("{:?}%", colour::saturation_word_to_percent(v.hsbk.saturation as u16)));
+                device_state.insert("Current brightness", format!("{:?}", v.hsbk.brightness));
+                device_state.insert("Current brightness percent", 
+                    format!("{:?}%", colour::brightness_word_to_percent(v.hsbk.brightness as u16)));
+                device_state.insert("Current kel", format!("{:?}", v.hsbk.kelvin));
         },
-        _ => "Unrecognised response.".to_string(),
+        ref v => {
+            device_state.insert("Unrecognised response", format!("{:?}", v));
+        },
     };
 
-    let report = format!("{}\n{}\n{}\n", device_state, response_packed_byte, payload);
-    cli::exit_done(&report);
+    let state_report = cli::format_device_state(&device_state);
+
+    cli::exit_done(&state_report);
 }
