@@ -112,7 +112,6 @@ pub fn format_device_state(map: &HashMap<&str, String>) -> String {
         "Reserved_2",
     ];
 
-
     let mut report = String::new();
     for &k in &print_order {
         match map.get(k) {

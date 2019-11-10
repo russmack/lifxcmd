@@ -15,10 +15,15 @@ use rustylifx::network::Device;
 
 pub mod cli;
 
+const BIN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 fn main() {
+    println!("");
+    cli::print_line_info_prefix("༄", "Lifxcmd version", &format!("{}\n\n", BIN_VERSION), Color::Magenta, Color::Green);
+
     // Configure flags.
     let matches = App::new("Lifx Command")
-        .version("0.1.1")
+        .version(BIN_VERSION)
         .author("Russell Mackenzie")
         .about("Control Lifx devices from the command line.")
         .arg(Arg::with_name("address")
