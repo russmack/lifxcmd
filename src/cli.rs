@@ -4,7 +4,13 @@ use std::process;
 
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
+pub fn print_info_sending(s: &str) {
+    print_line_info_prefix("↗", "Sending", s, Color::Cyan, Color::White);
+}
+
 pub fn print_line_info_prefix(icon: &str, status: &str, message: &str, colour_primary: Color, colour_secondary: Color) {
+    println!();
+
     // Display icon.
     print_string(icon, colour_primary, false);
 
@@ -45,6 +51,11 @@ pub fn print_string(s: &str, colour: Color, bold: bool) {
         Ok(_) => (),
         Err(e) => println!("Failed setting terminal output colour: {}", e),
     };
+
+    match stdout.flush() {
+        Ok(()) => (),
+        Err(e)  => println!("Failed flushing to stdout: {}", e),
+    };
 }
 
 pub fn print_response_header() {
@@ -82,7 +93,7 @@ pub fn exit_error(s: &str) {
 pub fn exit_done(s: &str) {
     print_response_header();
 
-    println!("{}", s);
+    print!("{}", s);
     print_done();
     println!("\n");
 

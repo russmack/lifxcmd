@@ -18,8 +18,7 @@ pub mod cli;
 const BIN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn main() {
-    println!("");
-    cli::print_line_info_prefix("༄", "Lifxcmd version", &format!("{}\n\n", BIN_VERSION), Color::Magenta, Color::Green);
+    print_program_header();
 
     // Configure flags.
     let matches = App::new("Lifx Command")
@@ -92,7 +91,7 @@ fn main() {
     let device = match matches.value_of("address").unwrap_or("") {
         "" => {
             // Locate device.
-            cli::print_line_info_prefix("↗", "Sending", "Locating device...\n\n", Color::Cyan, Color::White);
+            cli::print_info_sending("Locating device...");
             match messages::get_service() {
                 Ok(v)   => v,
                 Err(e)  => {
@@ -113,8 +112,7 @@ fn main() {
 
     // Check if state display was specified.
     if matches.is_present("report") {
-        //cli::print_string("Requesting device status report...\n", Color::Cyan, false);
-        cli::print_line_info_prefix("↗", "Sending", "Requesting device status report...\n\n", Color::Cyan, Color::White);
+        cli::print_info_sending("Requesting device status report...");
         let device = get_device_state(device);
         display_device_state(&device);
         return
@@ -124,11 +122,11 @@ fn main() {
     if let Some(v) = matches.value_of("power") {
         let res = match v {
             "on"  => {
-                cli::print_string("\nSetting device power to on...\n", Color::Cyan, false);
+                cli::print_info_sending("Setting device power to on...");
                 messages::set_device_on(&device)
             },
             "off" => {
-                cli::print_string("\nSetting device power to off...\n", Color::Cyan, false);
+                cli::print_info_sending("Setting device power to off...");
                 messages::set_device_off(&device)
             },
             _ => {
@@ -226,17 +224,9 @@ fn main() {
     };
 
     if hue >= 0 || saturation >= 0 || brightness >= 0 {
-        if hue < 0 {
-            hue = 360;
-        }
-
-        if saturation < 0 {
-            saturation = 100;
-        }
-
-        if brightness < 0 {
-            brightness = 100;
-        }
+        if hue < 0 { hue = 360 }
+        if saturation < 0 { saturation = 100 }
+        if brightness < 0 { brightness = 100 }
 
         let _ = messages::set_device_state(&device,
                                            &colour::HSB {
@@ -265,8 +255,8 @@ fn main() {
 
     // Flash if flag exists.
     if let Some(v) = matches.value_of("flash") {
+        cli::print_info_sending( "Flashing device to another colour...");
         flash(device, colour::get_colour(v), interval);
-        return
     };
 
     // TODO: ponder fade
@@ -279,6 +269,18 @@ fn main() {
     cli::exit_done("");
 }
 
+fn print_program_header() {
+    println!("");
+    cli::print_string("-----------------------------", Color::Green, false);
+    cli::print_line_info_prefix(
+        "༄",
+        "Lifxcmd version",
+        &format!("{}\n", BIN_VERSION),
+        Color::Magenta,
+        Color::Green);
+    cli::print_string("-----------------------------\n", Color::Green, false);
+}
+
 fn get_device_state(device: Device) -> Device {
     // TODO: sort out this hacky sleep.
     thread::sleep(Duration::from_millis(1000));
@@ -286,6 +288,7 @@ fn get_device_state(device: Device) -> Device {
 }
 
 fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
+    cli::print_info_sending("Getting current colour...");
     let device = get_device_state(device);
 
     // Extract current HSVK from device state data.
@@ -299,6 +302,24 @@ fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
         _ => None,
     };
 
+    // TODO BUG:
+    // Expected after flash:
+    // Current hue                   : 21845
+    // Current hue degrees           : 120º
+    // Current saturation            : 0
+    // Current saturation percent    : 0%
+    // Current brightness            : 22937
+    // Current brightness percent    : 34%
+    // Current kel                   : 2500
+    //
+    // Actual after flash:
+    // Current hue                   : 43690
+    // Current hue degrees           : 240º
+    // Current saturation            : 0
+    // Current saturation percent    : 0%
+    // Current brightness            : 20315
+    // Current brightness percent    : 30%
+    // Current kel                   : 2500
     let initial_state = match payload {
         Some(v) => {
             let h = colour::hue_word_to_degrees(v.hsbk.hue);
@@ -311,10 +332,12 @@ fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
 
     if let Some(v) = initial_state {
         // Change device state temporarily.
+        cli::print_info_sending("Flashing new colour...");
         let _ = messages::set_device_state(&device, &flash_colour, 2500, 0);
         thread::sleep(Duration::from_millis(duration_ms));
 
         // Return device to initial state.
+        cli::print_info_sending("Setting colour back...");
         let _ = messages::set_device_state(&device, &v, 2500, 0);
     }
 }
