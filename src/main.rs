@@ -157,8 +157,8 @@ fn main() {
 
     // Set the colour by name if flag exists.
     if let Some(v) = matches.value_of("colour") {
+        cli::print_info_sending("Setting device colour...");
         let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
-        return
     }
 
     // Set the colour by HSB if specified.
@@ -168,6 +168,7 @@ fn main() {
             match v.parse::<i16>() {
                 Ok(n) => {
                     if n >= 0 && n <= 360 {
+                        cli::print_info_sending("Setting device hue...");
                         n
                     } else {
                         cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)");
@@ -188,6 +189,7 @@ fn main() {
             match v.parse::<i16>() {
                 Ok(n) => {
                     if n >= 0 && n <= 100 {
+                        cli::print_info_sending("Setting device saturation...");
                         n
                     } else {
                         cli::exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)");
@@ -208,6 +210,7 @@ fn main() {
             match v.parse::<i16>() {
                 Ok(n) => {
                     if n >= 0 && n <= 100 {
+                        cli::print_info_sending("Setting device brightness...");
                         n
                     } else {
                         cli::exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)");
@@ -236,7 +239,6 @@ fn main() {
                                            },
                                            1000,
                                            duration);
-        return
     }
 
     // Check if the flash interval was specified.
