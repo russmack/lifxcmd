@@ -15,7 +15,7 @@ use rustylifx::network::Device;
 
 pub mod cli;
 
-const BIN_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const BIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     print_program_header();
@@ -270,7 +270,7 @@ fn main() {
 }
 
 fn print_program_header() {
-    println!("");
+    println!();
     cli::print_string("-----------------------------", Color::Green, false);
     cli::print_line_info_prefix(
         "༄",

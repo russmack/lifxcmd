@@ -40,7 +40,7 @@ pub fn print_string(s: &str, colour: Color, bold: bool) {
         Ok(_) => (),
         Err(e) => println!("Failed setting terminal output colour: {}", e),
     };
-    let s_out = format!("{}", s);
+    let s_out = s.to_string();
     if write!(&mut stdout,"{}", s_out).is_err() {
         print!("{}", s_out);
     };
@@ -73,8 +73,8 @@ pub fn exit_usage(s: &str) {
     print_line_info_prefix("!", "invalid", s, Color::Yellow, Color::White);
 
     // Display usage.
-    println!("");
-    let s_out = format!("lifxcmd --help");
+    println!();
+    let s_out = "lifxcmd --help".to_string();
     print_line_info_prefix("→", "usage", &s_out, Color::Cyan, Color::White);
     println!("\n");
 
@@ -104,7 +104,7 @@ pub fn print_done() {
     print_line_info_prefix("∗", "Done", "", Color::Green, Color::White);
 }
 
-pub fn format_device_state(map: &HashMap<&str, String>) -> String {
+pub fn format_device_state<S: ::std::hash::BuildHasher>(map: &HashMap<&str, String, S>) -> String {
     let print_order = [
         "Source",
         "Firmware",
@@ -125,10 +125,8 @@ pub fn format_device_state(map: &HashMap<&str, String>) -> String {
 
     let mut report = String::new();
     for &k in &print_order {
-        match map.get(k) {
-            Some(v) =>
-            report.push_str(&format!("{: <30}: {}\n", k, v)),
-            None => {},
+        if let Some(v) = map.get(k) {
+            report.push_str(&format!("{: <30}: {}\n", k, v));
         }
     }
 
