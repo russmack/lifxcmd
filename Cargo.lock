@@ -52,7 +52,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lifxcmd"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "clap 2.25.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustylifx 0.2.0 (git+https://github.com/russmack/rustylifx)",
@@ -62,7 +62,7 @@ dependencies = [
 [[package]]
 name = "rustylifx"
 version = "0.2.0"
-source = "git+https://github.com/russmack/rustylifx#9e504dc816233dc2504064b55e84f9ada9132055"
+source = "git+https://github.com/russmack/rustylifx#2165692d4cc2536c88d82ae75e543d4bd229dc0c"
 
 [[package]]
 name = "strsim"

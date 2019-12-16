@@ -113,7 +113,7 @@ fn main() {
     // Check if state display was specified.
     if matches.is_present("report") {
         cli::print_info_sending("Requesting device status report...");
-        let device = get_device_state(device);
+        let device = get_device_state(&device);
         display_device_state(&device);
         return
     }
@@ -258,7 +258,7 @@ fn main() {
     // Flash if flag exists.
     if let Some(v) = matches.value_of("flash") {
         cli::print_info_sending( "Flashing device to another colour...");
-        flash(device, colour::get_colour(v), interval);
+        flash(&device, colour::get_colour(v), interval);
     };
 
     // TODO: ponder fade
@@ -283,13 +283,13 @@ fn print_program_header() {
     cli::print_string("-----------------------------\n", Color::Green, false);
 }
 
-fn get_device_state(device: Device) -> Device {
+fn get_device_state(device: &Device) -> Device {
     // TODO: sort out this hacky sleep.
     thread::sleep(Duration::from_millis(1000));
     messages::get_device_state(device).unwrap()
 }
 
-fn flash(device: Device, flash_colour: HSB, duration_ms: u64) {
+fn flash(device: &Device, flash_colour: HSB, duration_ms: u64) {
     cli::print_info_sending("Getting current colour...");
     let device = get_device_state(device);
 
@@ -388,5 +388,5 @@ fn display_device_state(device: &Device) {
 
     let state_report = cli::format_device_state(&device_state);
 
-    cli::exit_done(&state_report);
+    println!("{}", &state_report);
 }
