@@ -8,7 +8,13 @@ pub fn print_info_sending(s: &str) {
     print_line_info_prefix("↗", "Sending", s, Color::Cyan, Color::White);
 }
 
-pub fn print_line_info_prefix(icon: &str, status: &str, message: &str, colour_primary: Color, colour_secondary: Color) {
+pub fn print_line_info_prefix(
+    icon: &str,
+    status: &str,
+    message: &str,
+    colour_primary: Color,
+    colour_secondary: Color,
+) {
     println!();
 
     // Display icon.
@@ -17,14 +23,14 @@ pub fn print_line_info_prefix(icon: &str, status: &str, message: &str, colour_pr
     // Display status left brace.
     let left_brace = " [";
     print_string(left_brace, colour_secondary, false);
-    
+
     // Display status word.
     print_string(status, colour_primary, false);
 
     // Display status right brace.
     let right_brace = "]\t";
     print_string(right_brace, colour_secondary, false);
-    
+
     // Display message.
     print_string(message, colour_secondary, false);
 }
@@ -41,7 +47,7 @@ pub fn print_string(s: &str, colour: Color, bold: bool) {
         Err(e) => println!("Failed setting terminal output colour: {}", e),
     };
     let s_out = s.to_string();
-    if write!(&mut stdout,"{}", s_out).is_err() {
+    if write!(&mut stdout, "{}", s_out).is_err() {
         print!("{}", s_out);
     };
 
@@ -54,7 +60,7 @@ pub fn print_string(s: &str, colour: Color, bold: bool) {
 
     match stdout.flush() {
         Ok(()) => (),
-        Err(e)  => println!("Failed flushing to stdout: {}", e),
+        Err(e) => println!("Failed flushing to stdout: {}", e),
     };
 }
 
@@ -62,7 +68,11 @@ pub fn print_response_header() {
     println!("\n");
     print_string("== ", Color::Cyan, false);
     print_string("Result", Color::White, true);
-    print_string(" ===========================================================================", Color::Cyan, false);
+    print_string(
+        " ===========================================================================",
+        Color::Cyan,
+        false,
+    );
     println!("\n");
 }
 
@@ -132,4 +142,3 @@ pub fn format_device_state<S: ::std::hash::BuildHasher>(map: &HashMap<&str, Stri
 
     report
 }
-
