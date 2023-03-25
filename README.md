@@ -36,10 +36,14 @@ OPTIONS:
     -i, --interval <FLASH INTERVAL>         The length of the flash
     -p, --power <POWER LEVEL>               Changes the power level on/off
     -s, --saturation <SATURATION>           Set the saturation of the device
+    -n, --subnet <SUBNET>                   Specify the device subnet
 ```
 
 Examples
 ```
+Turn light on, with optional subnet.
+./lifxcmd -p on -n 192.168.1.255
+
 Change colour to slate_gray instantly, by colour name:
 ./lifxcmd -c slate_gray
 
