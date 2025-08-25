@@ -1,12 +1,13 @@
 [package]
+edition = "2024"
 name = "lifxcmd"
-version = "0.3.6"
+version = "0.3.7"
 authors = ["Russell Mackenzie <russmackdev@gmail.com"]
 description = "Command line program for controlling LIFX devices."
 
 [dependencies]
 rustylifx = { git = "https://github.com/russmack/rustylifx" }
 #rustylifx = { path = "../rustylifx" }
-clap = "2.23.1"
+clap = "4.5.45"
 termcolor = "1.0.5"
 

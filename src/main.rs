@@ -7,7 +7,7 @@ use std::net::Ipv4Addr;
 use std::thread;
 use std::time::Duration;
 
-use clap::{App, Arg};
+use clap::{Arg, ArgAction, Command};
 use termcolor::Color;
 
 use rustylifx::colour::{self, Hsb};
@@ -18,133 +18,121 @@ pub mod cli;
 
 const BIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() {
-    print_program_header();
-
-    // Configure flags.
-    let matches = App::new("Lifx Command")
+// Configure command line arguments
+fn configure_cli() -> clap::ArgMatches {
+    Command::new("Lifx Command")
         .version(BIN_VERSION)
         .author("Russell Mackenzie")
         .about("Control Lifx devices from the command line.")
         .arg(
-            Arg::with_name("address")
-                .short("a")
+            Arg::new("address")
+                .short('a')
                 .long("address")
                 .value_name("HOST ADDRESS")
                 .help("Specifies the address of the target device")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("subnet")
-                .short("n")
+            Arg::new("subnet")
+                .short('n')
                 .long("subnet")
                 .value_name("SUBNET")
                 .help("Specify the device subnet")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("power")
-                .short("p")
+            Arg::new("power")
+                .short('p')
                 .long("power")
                 .value_name("POWER LEVEL")
                 .help("Changes the power level on/off")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("colour")
-                .short("c")
+            Arg::new("colour")
+                .short('c')
                 .long("colour")
                 .value_name("COLOUR NAME")
                 .help("Changes the colour")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("flash")
-                .short("f")
+            Arg::new("flash")
+                .short('f')
                 .long("flash")
                 .value_name("FLASH COLOUR NAME")
                 .help("Specifies the name of the colour to flash")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("interval")
-                .short("i")
+            Arg::new("interval")
+                .short('i')
                 .long("interval")
                 .value_name("FLASH INTERVAL")
                 .help("The length of the flash")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("duration")
-                .short("d")
+            Arg::new("duration")
+                .short('d')
                 .long("duration")
                 .value_name("TRANSITION DURATION")
                 .help("The duration of the colour transition")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("report")
-                .short("r")
+            Arg::new("report")
+                .short('r')
                 .long("report")
                 .value_name("DISPLAY CURRENT STATE")
                 .help("Display the current state of the device")
-                .takes_value(false),
+                .action(ArgAction::SetTrue),
         )
         .arg(
-            Arg::with_name("hue")
-                .short("h")
+            Arg::new("hue")
+                .short('h')
                 .long("hue")
                 .value_name("HUE")
                 .help("Set the hue of the device")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("saturation")
-                .short("s")
+            Arg::new("saturation")
+                .short('s')
                 .long("saturation")
                 .value_name("SATURATION")
                 .help("Set the saturation of the device")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .arg(
-            Arg::with_name("brightness")
-                .short("b")
+            Arg::new("brightness")
+                .short('b')
                 .long("brightness")
                 .value_name("BRIGHTNESS")
                 .help("Set the brightness of the device")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
-        .get_matches();
+        .get_matches()
+}
 
-    let subnet = match matches.value_of("subnet").unwrap_or("") {
-        "" => {
+// Parse subnet from command line arguments
+fn parse_subnet(matches: &clap::ArgMatches) -> Ipv4Addr {
+    match matches.get_one::<String>("subnet") {
+        Some(ip) if !ip.is_empty() => ip.parse().unwrap_or_else(|e| {
+            cli::exit_error(&format!("Invalid subnet ipv4 address: {}", e));
+            Ipv4Addr::new(0, 0, 0, 0) // Unreachable due to exit_error
+        }),
+        _ => {
             cli::print_info_sending("No subnet specified, defaulting to 192.168.1.255.");
             Ipv4Addr::new(192, 168, 1, 255)
         }
-        ip => match ip.parse() {
-            Ok(v) => v,
-            Err(e) => {
-                cli::exit_error(&format!("Invalid subnet ipv4 address: {}", e));
-                return;
-            }
-        },
-    };
+    }
+}
 
-    // Find the device, by flag, else broadcast.
-    let device = match matches.value_of("address").unwrap_or("") {
-        "" => {
-            // Locate device.
-            cli::print_info_sending("Locating device...");
-            match messages::get_service(subnet) {
-                Ok(v) => v,
-                Err(e) => {
-                    cli::exit_error(&format!("Failed finding device: {}", e));
-                    return;
-                }
-            }
-        }
-        ip => {
-            // Set device.
+// Get device from address or broadcast
+fn get_device(matches: &clap::ArgMatches, subnet: Ipv4Addr) -> network::Device {
+    match matches.get_one::<String>("address") {
+        Some(ip) if !ip.is_empty() => {
             const PORT: u16 = 56700;
             network::Device {
                 socket_addr: format!("{}:{}", ip, PORT)
@@ -153,136 +141,124 @@ fn main() {
                 response: None,
             }
         }
-    };
-
-    // Check if state display was specified.
-    if matches.is_present("report") {
-        cli::print_info_sending("Requesting device status report...");
-        let device = get_device_state(&device);
-        display_device_state(&device);
-        return;
+        _ => {
+            cli::print_info_sending("Locating device...");
+            messages::get_service(subnet).unwrap_or_else(|e| {
+                cli::exit_error(&format!("Failed finding device: {}", e));
+                network::Device {
+                    socket_addr: "0.0.0.0:0".parse().unwrap(),
+                    response: None,
+                }
+            })
+        }
     }
+}
 
-    // Set the power level on/off.
-    if let Some(v) = matches.value_of("power") {
-        let res = match v {
+// Handle device state report
+fn handle_report(matches: &clap::ArgMatches, device: &network::Device) -> bool {
+    if matches.get_flag("report") {
+        cli::print_info_sending("Requesting device status report...");
+        let device = get_device_state(device);
+        display_device_state(&device);
+        true
+    } else {
+        false
+    }
+}
+
+// Handle power state changes
+fn handle_power(matches: &clap::ArgMatches, device: &network::Device) -> bool {
+    if let Some(v) = matches.get_one::<String>("power") {
+        let res = match v.as_str() {
             "on" => {
                 cli::print_info_sending("Setting device power to on...");
-                messages::set_device_on(&device)
+                messages::set_device_on(device)
             }
             "off" => {
                 cli::print_info_sending("Setting device power to off...");
-                messages::set_device_off(&device)
+                messages::set_device_off(device)
             }
             _ => {
                 cli::exit_usage("Power state is invalid, should be on or off.");
-                return;
+                return true;
             }
         };
-
         if res.is_err() {
-            cli::exit_error(&format!(
-                "Failed setting device power state: {:?}",
-                res.err()
-            ));
-            return;
+            cli::exit_error(&format!("Failed setting device power state: {:?}", res.err()));
+            return true;
         }
-    };
-
-    // Check if transition duration was specified.
-    let duration = match matches.value_of("duration") {
-        Some(v) => match v.parse::<u32>() {
-            Ok(n) => n,
-            Err(e) => {
-                cli::exit_usage(&format!("Duration is not a valid number: {}", e));
-                return;
-            }
-        },
-        None => 0,
-    };
-
-    // Set the colour by name if flag exists.
-    if let Some(v) = matches.value_of("colour") {
-        cli::print_info_sending("Setting device colour...");
-        let _ = messages::set_device_state(&device, &colour::get_colour(v), 1000, duration);
+        true
+    } else {
+        false
     }
+}
 
-    // Set the colour by HSB if specified.
-    // HSB: 360º, 100%, 100%
-    let mut hue = match matches.value_of("hue") {
-        Some(v) => match v.parse::<i16>() {
-            Ok(n) => {
-                if (0..=360).contains(&n) {
-                    cli::print_info_sending("Setting device hue...");
-                    n
-                } else {
-                    cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)");
-                    return;
-                }
-            }
-            Err(e) => {
-                cli::exit_usage(&format!("Hue is not a valid number: {}", e));
-                return;
-            }
-        },
-        None => -1,
-    };
+// Parse duration from command line arguments
+fn parse_duration(matches: &clap::ArgMatches) -> u32 {
+    matches
+        .get_one::<String>("duration")
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or_else(|| {
+            cli::exit_usage("Duration is not a valid number");
+            0
+        })
+}
 
-    let mut saturation = match matches.value_of("saturation") {
-        Some(v) => match v.parse::<i16>() {
-            Ok(n) => {
-                if (0..=100).contains(&n) {
-                    cli::print_info_sending("Setting device saturation...");
-                    n
-                } else {
-                    cli::exit_usage(
-                        "Saturation is outside the valid range, should be 0 - 100 (percent)",
-                    );
-                    return;
-                }
+// Parse HSB values
+fn parse_hsb(matches: &clap::ArgMatches) -> (i16, i16, i16) {
+    let hue = matches
+        .get_one::<String>("hue")
+        .and_then(|v| v.parse::<i16>().ok())
+        .map(|n| {
+            if !(0..=360).contains(&n) {
+                cli::exit_usage("Hue is outside the valid range, should be 0 - 360 (degrees)");
             }
-            Err(e) => {
-                cli::exit_usage(&format!("Saturation is not a valid number: {}", e));
-                return;
-            }
-        },
-        None => -1,
-    };
+            n
+        })
+        .unwrap_or(-1);
 
-    let mut brightness = match matches.value_of("brightness") {
-        Some(v) => match v.parse::<i16>() {
-            Ok(n) => {
-                if (0..=100).contains(&n) {
-                    cli::print_info_sending("Setting device brightness...");
-                    n
-                } else {
-                    cli::exit_usage(
-                        "Brightness is outside the valid range, should be 0 - 100 (percent)",
-                    );
-                    return;
-                }
+    let saturation = matches
+        .get_one::<String>("saturation")
+        .and_then(|v| v.parse::<i16>().ok())
+        .map(|n| {
+            if !(0..=100).contains(&n) {
+                cli::exit_usage("Saturation is outside the valid range, should be 0 - 100 (percent)");
             }
-            Err(e) => {
-                cli::exit_usage(&format!("Brightness is not a valid number: {}", e));
-                return;
-            }
-        },
-        None => -1,
-    };
+            n
+        })
+        .unwrap_or(-1);
 
+    let brightness = matches
+        .get_one::<String>("brightness")
+        .and_then(|v| v.parse::<i16>().ok())
+        .map(|n| {
+            if !(0..=100).contains(&n) {
+                cli::exit_usage("Brightness is outside the valid range, should be 0 - 100 (percent)");
+            }
+            n
+        })
+        .unwrap_or(-1);
+
+    (hue, saturation, brightness)
+}
+
+// Handle color changes
+fn handle_color(matches: &clap::ArgMatches, device: &network::Device, duration: u32) {
+    if let Some(v) = matches.get_one::<String>("colour") {
+        cli::print_info_sending("Setting device colour...");
+        let _ = messages::set_device_state(device, &colour::get_colour(v), 1000, duration);
+    }
+}
+
+// Handle HSB changes
+fn handle_hsb(device: &network::Device, hue: i16, saturation: i16, brightness: i16, duration: u32) {
     if hue >= 0 || saturation >= 0 || brightness >= 0 {
-        if hue < 0 {
-            hue = 360
-        }
-        if saturation < 0 {
-            saturation = 100
-        }
-        if brightness < 0 {
-            brightness = 100
-        }
+        let hue = if hue < 0 { 360 } else { hue };
+        let saturation = if saturation < 0 { 100 } else { saturation };
+        let brightness = if brightness < 0 { 100 } else { brightness };
 
         let _ = messages::set_device_state(
-            &device,
+            device,
             &colour::Hsb {
                 hue: hue as u16,
                 saturation: saturation as u8,
@@ -292,31 +268,55 @@ fn main() {
             duration,
         );
     }
+}
 
-    // Check if the flash interval was specified.
-    let interval = match matches.value_of("interval") {
-        Some(v) => match v.parse::<u64>() {
-            Ok(n) => n,
-            Err(e) => {
-                cli::exit_usage(&format!("Interval is not a valid number: {}", e));
-                return;
-            }
-        },
-        None => 1000,
-    };
+// Parse flash interval
+fn parse_interval(matches: &clap::ArgMatches) -> u64 {
+    matches
+        .get_one::<String>("interval")
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(1000)
+}
 
-    // Flash if flag exists.
-    if let Some(v) = matches.value_of("flash") {
+// Handle flash command
+fn handle_flash(matches: &clap::ArgMatches, device: &network::Device, interval: u64) {
+    if let Some(v) = matches.get_one::<String>("flash") {
         cli::print_info_sending("Flashing device to another colour...");
-        flash(&device, colour::get_colour(v), interval);
-    };
+        flash(device, colour::get_colour(v), interval);
+    }
+}
 
-    // TODO: ponder fade
-    // let fade_len: u32 = 3000;
-    // fade(&device, colour::get_colour("crimson"), fade_len);
-    // thread::sleep(Duration::from_millis((fade_len + 1) as u64));
-    // Fade device back to initial state.
-    // fade(&device, initial_state.unwrap(), 3000);
+// TODO: ponder fade
+// let fade_len: u32 = 3000;
+// fade(&device, colour::get_colour("crimson"), fade_len);
+// thread::sleep(Duration::from_millis((fade_len + 1) as u64));
+// Fade device back to initial state.
+// fade(&device, initial_state.unwrap(), 3000);
+
+fn main() {
+    print_program_header();
+
+    let matches = configure_cli();
+
+    let subnet = parse_subnet(&matches);
+    let device = get_device(&matches, subnet);
+
+    if handle_report(&matches, &device) {
+        return;
+    }
+
+    if handle_power(&matches, &device) {
+        return;
+    }
+
+    let duration = parse_duration(&matches);
+    let (hue, saturation, brightness) = parse_hsb(&matches);
+
+    handle_color(&matches, &device, duration);
+    handle_hsb(&device, hue, saturation, brightness, duration);
+
+    let interval = parse_interval(&matches);
+    handle_flash(&matches, &device, interval);
 
     cli::exit_done("");
 }
